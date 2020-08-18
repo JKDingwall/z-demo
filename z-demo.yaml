@@ -1,0 +1,66 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: z-demo
+
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-content-map
+  namespace: z-demo
+data:
+  "message.html": |
+    <p>Emerald XLR</p>
+    <p>Coming to a POS near you!</p>
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: z-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      nginx: web
+  template:
+    metadata:
+      labels:
+        nginx: web
+    spec:
+      containers:
+      - name: nginx
+        image: jkdingwall/z-demo
+
+        volumeMounts:
+          - name: web-content
+            mountPath: /usr/share/nginx/html/map
+            readOnly: true
+      volumes:
+      - name: web-content
+        configMap:
+          name: web-content-map
+          items:
+            - key: "message.html"
+              path: "message.html"
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-entry
+  namespace: z-demo
+spec:
+  type: NodePort
+  selector:
+    nginx: web
+  ports:
+  - port: 8080
+    targetPort: 80
+    nodePort: 30001
